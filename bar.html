@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html>
+  <head>
+      <meta charset="utf-8">
+  	  <title>unemp_states_us_nov_2013</title>
+      <script type = "text/javascript" src="d3/d3.v3.js"></script>
+  </head>
+
+
+   <body>
+
+       <label><input type="radio" name="order" value="state"> State</label>
+       <label><input type="radio" name="order" value="rate" checked> Rate</label>
+
+     <script type = "text/javascript">
+
+      var margin = {top: 3, bottom: 35, left:200, right: 40},
+          width = 900 - margin.left - margin.right;
+          height = 900 - margin.top - margin.bottom;  
+          xScale = d3.scale.linear().range([0, width]);
+          yScale = d3.scale.ordinal().rangeRoundBands([0, height], .8, 0);
+
+          d3.select("body").append("div")
+            .text("Unemployment Rates for States")
+            .style("font-size",20+"px")
+            .style("font-family","helvetica")
+            .style("text-anchor","middle")
+            .style("font-weight","bold")
+
+          svg = d3.select("body").append("svg")
+             .attr("width", width+margin.left+margin.right)
+             .attr("height", height+margin.top+margin.bottom),
+
+          g = svg.append("g").attr("transform", "translate("+margin.left+","+margin.top+")");
+
+
+       function NameAscending(a, b) {return a.State > b.State ? 1 : a.State == b.State ? 0 : -1; }
+       function NameDescending(a, b) {return a.State < b.State ? 1 : a.State == b.State ? 0 : -1; }
+       function ascending(a, b) { if(a.Rate> b.Rate) return 1;
+                                    else if(a.Rate< b.Rate) return -1;
+                                    else if(a.Rate== b.Rate) {
+                                      if(a.State > b.State) return 1;
+                                      else if(a.State < b.State) return -1;
+                                   }}
+       function decending(a, b) { if(a.Rate> b.Rate) return -1;
+                                    else if(a.Rate< b.Rate) return 1;
+                                    else if(a.Rate== b.Rate) {
+                                      if(a.State > b.State) return 1;
+                                      else if(a.State < b.State) return -1;
+                                   }}
+
+       d3.tsv("unemp_states_us_nov_2013.tsv", function(error, data){
+ 
+         var table = d3.select("body").append("table")
+
+             caption = table.append("caption")
+
+             tbody = table.append("tbody"),
+             rows = tbody.selectAll("tr").data(data).enter().append("tr");
+
+ 
+
+         var Ccolor = d3.scale.linear()
+                        .domain([0, tbody.selectAll("tr")[0].length-1])
+                        .interpolate(d3.interpolateRgb)
+                        .range(["orangered", "silver"]);
+  
+                 var max = d3.max(data, function(d) { return d.Rate; } );
+                 var min = 0;
+ 
+                 xScale.domain([min, max]);
+                 yScale.domain(data.map(function(d) { return d.State; }));
+ 
+                 var groups = g.append("g").selectAll("text").data(data).enter().append("g")
+                               .attr("transform", function(d, i) { return "translate(0, " + yScale(d.State) +")"; });
+
+                          groups.append("rect").attr("class","bar_2")
+                                .attr("width", 0 )
+                                .attr("height", 15 )
+                                .style("fill", function(d,i){return Ccolor(i);})
+                                .transition()
+                                .duration(function(d,i){return 1000*1;})
+                                .attr("width", function(d) { return 0.5*xScale(d.Rate)+"px"; }),
+
+                         groups.append("text").data(data).attr("class","State_2")
+                               .attr("x",  -25)
+                               .attr("y", 7.5)
+                               .attr("dy", ".25em")
+                               .text(function(d) { return d.State;})
+                               .style("font-size",12+"px")
+                               .style("font-family","helvetica")
+                               .style("text-anchor","end"),
+
+                         groups.append("text").data(data).attr("class","Rate_2")
+                               .attr("x", function(d) { return 0.5*xScale(d.Rate)-5; })
+                               .attr("y", 7.5 )
+                               .attr("dy", ".25em")
+                               .text(function(d) { return d.Rate;})
+                               .style("font-size",12+"px")
+                               .style("font-family","helvetica")
+                               .style("text-anchor","end")
+                               .style("fill","white");
+
+
+          d3.selectAll("input").on("click", reorder); 
+          var chartMetricAscending = true;
+          var chartNameAscending = true; 
+          function reorder() {
+                               var sort_2;
+                                if (this.value == "rate") {
+                                   if (chartMetricAscending) sort_2 = ascending;
+                                   else sort_2 = decending;
+                                   chartMetricAscending = !chartMetricAscending;
+                                   yScale = yScale.domain(data.sort(sort_2).map(function(d) { return d.State; }));
+                                groups
+                                   .transition()
+                                   .duration(750)
+                                   .delay(function(d, i) { return i * 10; })
+                                   .attr("transform", function(d, i) { return "translate("+ 0 +", "+ yScale(d.State) +")"; })
+                                 }
+
+                                 else if (this.value == "state"){
+                                   if (chartNameAscending) sort_2 = NameAscending;
+                                   else sort_2 = NameDescending;
+                                   chartNameAscending  = !chartNameAscending ;
+                                   yScale = yScale.domain(data.sort(sort_2).map(function(d) { return d.State; }));
+                                groups
+                                   .transition()
+                                   .duration(750)
+                                   .delay(function(d, i) { return i * 10; })
+                                   .attr("transform", function(d, i) { return "translate("+ 0 +", "+ yScale(d.State) +")"; })
+                             }
+                           }
+
+           });
+
+        </script>
+      </body>
+</html>
